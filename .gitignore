@@ -1,0 +1,17 @@
+# Dependencies
+/node_modules
+/server/node_modules
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+/server/.env
+
+# Keys and Secrets
+# 絕對不要上傳您的密鑰檔案
+/google-service-account-key.json
+/server/google-service-account-key.json

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>契約書費用計算</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      body {
+        background-color: #f0f2f5;
+      }
+      .card {
+        border: none;
+      }
+      .item-row {
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">← 返回系統主頁</a>
+      </div>
+    </nav>
+
+    <div class="container py-5">
+      <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+          <h3 class="mb-0">📋 契約書費用計算與簽訂</h3>
+        </div>
+        <div class="card-body">
+          <div class="mb-4">
+            <label for="caseIdInput" class="form-label fw-bold"
+              >1. 案件編號 (Case ID) <span class="text-danger">*</span></label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="caseIdInput"
+              placeholder="例如: P25-001"
+              required
+            />
+            <div class="form-text">請務必填寫已成功通報的案件 ID。</div>
+          </div>
+
+          <h5 class="mt-4 mb-3">2. 服務項目清單</h5>
+          <div id="service-items-container">
+            <div class="row g-2 mb-2 item-row">
+              <div class="col-md-5">
+                <input
+                  type="text"
+                  class="form-control item-description"
+                  placeholder="服務描述 (例如: 禮儀師服務費)"
+                  value="基本服務套裝"
+                />
+              </div>
+              <div class="col-md-3">
+                <input
+                  type="number"
+                  class="form-control item-price"
+                  placeholder="單價 (NT$)"
+                  value="80000"
+                  min="0"
+                />
+              </div>
+              <div class="col-md-2">
+                <input
+                  type="number"
+                  class="form-control item-quantity"
+                  placeholder="數量"
+                  value="1"
+                  min="1"
+                />
+              </div>
+              <div class="col-md-2 d-flex align-items-center">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger remove-item-btn"
+                  disabled
+                  onclick="removeItem(this)"
+                >
+                  移除
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-success mt-3"
+            id="add-item-btn"
+          >
+            + 新增服務項目
+          </button>
+
+          <hr class="my-4" />
+
+          <div class="row">
+            <div class="col-md-8 text-end fw-bold">總費用 (Total Fee):</div>
+            <div class="col-md-4">
+              <span id="total-fee" class="fs-4 text-primary">NT$ 0</span>
+            </div>
+          </div>
+
+          <hr class="my-4" />
+
+          <div class="mb-4">
+            <label for="contractStatus" class="form-label fw-bold"
+              >合約狀態</label
+            >
+            <select class="form-select" id="contractStatus">
+              <option value="待簽訂" selected>待簽訂 (草稿)</option>
+              <option value="已簽訂">已簽訂 (正式)</option>
+              <option value="已取消">已取消</option>
+            </select>
+          </div>
+
+          <button
+            type="button"
+            class="btn btn-lg btn-success w-100"
+            id="save-contract-btn"
+          >
+            💾 儲存契約書草稿並計算
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <script src="assets/js/contract.js"></script>
+  </body>
+</html>
