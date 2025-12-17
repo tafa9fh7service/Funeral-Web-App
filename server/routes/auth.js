@@ -1,92 +1,69 @@
-// server/routes/auth.js
+// server/routes/auth.js (完整替換)
 
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
-const { getRows } = require('../utils/sheets'); // 引入 Sheets 工具
+const { getRows } = require('../utils/sheets');
 
-// 設定工作表名稱和欄位
-const STAFF_SHEET_NAME = '01_人員清單';
-// 試算表的欄位順序：staff_id, name, email, role, status
-const STAFF_HEADERS = ['staff_id', 'name', 'email', 'role', 'status']; 
-const STAFF_RANGE = 'A:E'; // 讀取 A 到 E 欄位
+const STAFF_SHEET = '01_人員清單';
 
-/**
- * 將 Sheets 讀取的二維陣列資料轉換為物件陣列
- * @param {Array<Array<any>>} data - Sheets API 返回的資料
- * @returns {Array<Object>} - 包含欄位名稱的物件陣列
- */
-function sheetDataToObject(data) {
-    if (!data || data.length < 2) return []; // 確保有標頭和至少一行資料
-
-    const [headerRow, ...dataRows] = data; // 標頭是第一行，其餘是資料
-
-    return dataRows.map(row => {
-        let obj = {};
-        // 遍歷預設的 STAFF_HEADERS 欄位，並對應到該行的值
-        // 我們使用預設的 STAFF_HEADERS 來確保即使Sheets標頭有錯，程式碼也能按預期欄位處理
-        STAFF_HEADERS.forEach((key, index) => {
-            obj[key] = row[index] || ''; // 如果該欄位為空，則設定為空字串
-        });
-        return obj;
-    }).filter(obj => obj.status === 'Active'); // 只處理狀態為 'Active' 的員工
-}
-
-
-// 
-
-
+// 登入 API
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body; // 密碼目前不檢查，未來優化時使用
-
-    if (!email) {
-        return res.status(400).json({ message: '請輸入電子郵件。' });
-    }
+    const { username, password } = req.body;
 
     try {
-        // 1. 從 Google Sheets 讀取所有員工資料 (A:E 欄位)
-        const rawStaffData = await getRows(STAFF_SHEET_NAME, STAFF_RANGE);
+        // 抓取 A 欄到 F 欄 (含新增的密碼欄)
+        const rows = await getRows(STAFF_SHEET, 'A:F');
         
-        // 2. 轉換為易於處理的物件格式，並過濾狀態
-        const staffList = sheetDataToObject(rawStaffData);
-        
-        // 3. 查找是否有符合的員工
-        const user = staffList.find(staff => staff.email.toLowerCase() === email.toLowerCase());
+        // 尋找工號符合的使用者
+        const userRow = rows.find(row => row[0] === username);
 
-        // ** 實際密碼驗證邏輯 (目前跳過) **
-        // if (!user || user.password !== hash(password)) { ... } 
-        // 由於 Google Sheets 不適合儲存 Hashed 密碼，我們目前只驗證 Email 存在性
-
-        if (user) {
-            // 找到使用者且狀態為 Active (已在 sheetDataToObject 內過濾)
-
-            // 建立 JWT Token
-            const token = jwt.sign({ 
-                staff_id: user.staff_id, 
-                email: user.email, 
-                role: user.role 
-            }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-            return res.status(200).json({
-                message: '登入成功，已從 Google Sheets 驗證。',
-                token: token,
-                user: { staff_id: user.staff_id, name: user.name, role: user.role }
-            });
-
-        } else {
-            // 未找到使用者
-            return res.status(401).json({ 
-                message: '無效的帳號或權限不足，請聯繫管理員。' 
-            });
+        if (!userRow) {
+            return res.status(401).json({ message: '帳號不存在' });
         }
 
-    } catch (error) {
-        console.error('Login processing error:', error);
-        return res.status(500).json({ 
-            message: '伺服器內部錯誤，無法連接資料庫或讀取資料。', 
-            details: error.message 
+        // 驗證 F 欄 (密碼)
+        // 注意：這裡假設密碼在 F 欄 (索引值為 5)
+        const dbPassword = userRow[5];
+
+        if (dbPassword !== password) {
+            return res.status(401).json({ message: '密碼錯誤' });
+        }
+
+        // 登入成功，封裝使用者資訊
+        const user = {
+            staff_id: userRow[0],
+            name: userRow[1],
+            role: userRow[3]
+        };
+
+        // 產生 JWT Token
+        const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '24h' });
+
+        res.json({
+            message: '登入成功',
+            token,
+            user
         });
+
+    } catch (error) {
+        console.error('Auth error:', error);
+        res.status(500).json({ message: '伺服器錯誤' });
     }
 });
 
-module.exports = router;
+// JWT 驗證中介層 (供其他路由使用)
+function verifyToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ message: '缺少認證憑證' });
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.status(403).json({ message: '憑證無效或已過期' });
+        req.user = user;
+        next();
+    });
+}
+
+module.exports = { router, verifyToken };
