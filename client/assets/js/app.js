@@ -12,7 +12,7 @@ const CONFIG = (() => {
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
     
     // 請在部署後，將此處的佔位符替換為您的 Zeabur API 服務的域名！
-    const ZEABUR_API_DOMAIN = 'https://[您的 Zeabur API 服務域名].zeabur.app'; 
+    const ZEABUR_API_DOMAIN = 'https://funeralwebapp-backend.zeabur.app'; 
 
     return {
         // 如果是本地，使用本地的 3000 埠
