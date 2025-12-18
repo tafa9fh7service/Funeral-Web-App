@@ -3,6 +3,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 const { verifyToken } = require('./routes/auth'); // 引入 JWT 驗證中介層
 
 // 1. 初始化環境變數
@@ -14,20 +15,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 3. 引入各個功能路由
-const authRoutes = require('./routes/auth').router; // 驗證路由
-const caseRoutes = require('./routes/cases');      // 案件路由
-const contractRoutes = require('./routes/contracts'); // 契約路由
-const scheduleRoutes = require('./routes/schedule');  // 排班路由
-const reminderRoutes = require('./routes/reminder');  // 提醒路由
-const inventoryRoutes = require('./routes/inventory'); // 庫存路由
-const paymentRoutes = require('./routes/payment');     // 金流路由
-const reportRoutes = require('./routes/report');       // 報表路由
-const adminRoutes = require('./routes/admin');         // 後台管理路由
-const procurementRoutes = require('./routes/procurement'); // ★進銷存：採購路由
+// 3. 引入所有功能路由
+const authRoutes = require('./routes/auth').router;      // 驗證
+const caseRoutes = require('./routes/cases');           // 案件
+const contractRoutes = require('./routes/contracts');   // 契約
+const scheduleRoutes = require('./routes/schedule');    // 排班
+const reminderRoutes = require('./routes/reminder');    // 提醒
+const inventoryRoutes = require('./routes/inventory');  // 庫存
+const paymentRoutes = require('./routes/payment');      // 金流
+const reportRoutes = require('./routes/report');        // 報表聚合
+const adminRoutes = require('./routes/admin');          // 後台管理
+const procurementRoutes = require('./routes/procurement'); // 採購進貨
+const notifyRoutes = require('./routes/notify').router;  // LINE 推播
 
-// 4. 掛載路由 (API Routes)
-// 注意：除了 auth (登入) 之外，其餘路由皆經過 verifyToken 檢查
+// 4. 掛載 API 路由 (API Routes)
+// 注意：除了 /api/auth 之外，其餘所有路由皆受 verifyToken 保護
 app.use('/api/auth', authRoutes);
 app.use('/api/cases', verifyToken, caseRoutes);
 app.use('/api/contracts', verifyToken, contractRoutes);
@@ -37,15 +39,26 @@ app.use('/api/inventory', verifyToken, inventoryRoutes);
 app.use('/api/payment', verifyToken, paymentRoutes);
 app.use('/api/report', verifyToken, reportRoutes);
 app.use('/api/admin', verifyToken, adminRoutes);
-app.use('/api/procurement', verifyToken, procurementRoutes); // ★註冊採購進貨路由
+app.use('/api/procurement', verifyToken, procurementRoutes);
+app.use('/api/notify', verifyToken, notifyRoutes);
 
-// 5. 測試路由
-app.get('/', (req, res) => {
-    res.send('喪禮服務 Web App API 伺服器運作中...');
+// 5. 基礎連線測試
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'API Server is running correctly.' });
 });
 
-// 6. 啟動伺服器
+// 6. 錯誤處理 (Error Handling)
+app.use((err, req, res, next) => {
+    console.error('Server Internal Error:', err.stack);
+    res.status(500).json({ message: '伺服器內部錯誤', error: err.message });
+});
+
+// 7. 啟動伺服器
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`==========================================`);
+    console.log(`🚀 Funeral Web App Server 啟動成功`);
+    console.log(`📡 運行埠號: ${PORT}`);
+    console.log(`⏰ 當前時間: ${new Date().toLocaleString()}`);
+    console.log(`==========================================`);
 });
